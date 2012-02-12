@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+    <!--<description>Puild Script Run</description>-->
+
+    <project name="MyProject" basedir="." default="run-project">
+
+    <property file="build.properties"/>
+    <property name="src.dir" value="${basedir}/src"/>
+    <property name="web.dir" value="${basedir}/web"/>
+    <property  name="lib.dir" value="${basedir}/lib"/>
+    <property  name="i18n.dir" value="${basedir}/i18n"/>
+    <property  name="props.dir" value="${basedir}/props"/>
+    <property  name="test.dir" value="${basedir}/test"/>
+    <property  name="dist.dir" value="${basedir}/target"/>
+    <property name="build.dir" value="${dist.dir}/${project.name}"/>
+    <property name="build.classes.dir" value="${dist.dir}/${project.name}/WEB-INF/classes"/>
+
+        <!--======================= Library path =======================-->
+    <target name="run-project" depends="stop-server, clean, build, deploy, tests, start-server, clean-target"/>
+
+        <!--======================= Start Server =======================-->
+    <target name="start-server" description="Starts Tomcat">
+        <exec executable="${appserver.home}/bin/startup.sh">
+            <arg value="start"/>
+        </exec>
+    </target>
+
+        <!--======================= stop Server =======================-->
+    <target name="stop-server" description="Starts Tomcat">
+        <exec executable="${appserver.home}/bin/shutdown.sh">
+            <arg value="stop"/>
+        </exec>
+    </target>
+
+        <!--======================= Library Path =======================-->
+    <path id="classpath">
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+
+        <fileset dir="${appserver.lib}">
+            <include name="*.jar"/>
+        </fileset>
+        <pathelement path="${build.classes.dir}"/>
+    </path>
+
+    <!--======================= Clean Project =======================-->
+    <target name="clean">
+        <delete dir="${dist.dir}/${project.name}" />
+        <delete dir="${deploy.path}/${project.name}" />
+    </target>
+
+    <!--======================= Clean Project =======================-->
+    <target name="clean-target">
+        <delete dir="${dist.dir}/${project.name}" />
+    </target>
+
+        <!--======================= Build Java Class =======================-->
+    <target name="build" >
+        <mkdir dir="${build.classes.dir}"/>
+        <javac destdir="${build.classes.dir}" debug="true" srcdir="src" source="1.5" target="1.5" deprecation="false" optimize="false" failonerror="true">
+            <classpath refid="classpath"/>
+        </javac>
+    </target>
+
+        <!--======================= Deploy Project =======================-->
+    <target name="deploy" description="prepares deployment resources">
+            <!--:::::::: Copy web ::::::::-->
+        <copy todir="${build.dir}">
+            <fileset dir="${web.dir}"/>
+        </copy>
+            <!--:::::::: Make lib directory ::::::::-->
+        <mkdir dir="${build.dir}/WEB-INF/lib"/>
+            <!--:::::::: Copy lib ::::::::-->
+        <copy todir="${build.dir}/WEB-INF/lib">
+            <fileset dir="${lib.dir}">
+                <include name="*.jar"/>
+            </fileset>
+        </copy>
+            <!--:::::::: Copy props & i18n ::::::::-->
+        <copy todir="${build.classes.dir}">
+            <fileset dir="${props.dir}"/>
+            <fileset dir="${i18n.dir}"/>
+        </copy>
+            <!--:::::::: Copy Project ::::::::-->
+        <copy todir="${deploy.path}">
+            <fileset dir="${dist.dir}"/>
+        </copy>
+    </target>
+
+    <!--:::::::: Build Java Test class ::::::::-->
+    <target name="buildtests" description="Compile test tree java files">
+        <mkdir dir="${build.classes.dir}"/>
+        <javac destdir="${build.classes.dir}" source="1.5" target="1.5" debug="true"
+            deprecation="false" optimize="false" failonerror="true">
+            <src path="${test.dir}"/>
+            <classpath refid="classpath"/>
+        </javac>
+    </target>
+    <target name="tests" depends="buildtests" description="Run tests">
+        <junit printsummary="on"
+            fork="false"
+            haltonfailure="false"
+            failureproperty="tests.failed"
+            showoutput="true">
+            <classpath refid="classpath"/>
+            <formatter type="brief" usefile="false"/>
+            <batchtest>
+                <fileset dir="${build.classes.dir}">
+                    <include name="**/*Tests.*"/>
+                </fileset>
+            </batchtest>
+        </junit>
+        <fail if="tests.failed">
+        tests.failed=${tests.failed}
+        ***********************************************************
+        ***********************************************************
+        **** One or more tests failed! Check the output ... ****
+        ***********************************************************
+        ***********************************************************
+        </fail>
+    </target>
+
+</project>

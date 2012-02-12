@@ -1,0 +1,10 @@
+{arch}
+.*
+!.gitignore
+,*
++*
+*.ipr
+*.iws
+*.iml
+bundles
+target
